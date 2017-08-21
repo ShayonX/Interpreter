@@ -1,4 +1,4 @@
-INTEGER, PLUS, MINUS, MULT, DIV, EOF = 'INTEGER', 'PLUS', 'MINUS', 'MULT', 'DIV', 'EOF'
+INTEGER, PLUS, MINUS, MULT, DIV, SPACE, EOF = 'INTEGER', 'PLUS', 'MINUS', 'MULT', 'DIV', 'SPACE', 'EOF'
 
 
 class Token(object):
@@ -37,6 +37,11 @@ class Interpreter(object):
             self.pos += 1
             return token
 
+        if current_char == ' ':
+            token = Token(SPACE, current_char)
+            self.pos += 1
+            return token
+
         if current_char == '+':
             token = Token(PLUS, current_char)
             self.pos += 1
@@ -68,10 +73,21 @@ class Interpreter(object):
     def expr(self):
         self.current_token = self.get_next_token()
 
+
         left = self.current_token
         self.eat(INTEGER)
 
+        while self.current_token.type == INTEGER:
+            left.type = self.current_token.type
+            left.value = left.value * 10 + self.current_token.value
+            self.eat(INTEGER)
+
         op = self.current_token
+
+        while op.value == ' ':
+            self.eat(SPACE)
+            op = self.current_token
+
         if op.value == '+':
             self.eat(PLUS)
         elif op.value == '-':
@@ -82,7 +98,17 @@ class Interpreter(object):
             self.eat(DIV)
 
         right = self.current_token
+
+        while right.value == ' ':
+            self.eat(SPACE)
+            right = self.current_token
+
         self.eat(INTEGER)
+
+        while self.current_token.type == INTEGER:
+            right.type = self.current_token.type
+            right.value = right.value * 10 + self.current_token.value
+            self.eat(INTEGER)
 
         if op.value == '+':
             result = left.value + right.value
