@@ -1,4 +1,5 @@
-INTEGER, PLUS, MINUS, MULT, DIV, SPACE, EOF = 'INTEGER', 'PLUS', 'MINUS', 'MULT', 'DIV', 'SPACE', 'EOF'
+VAR, INTEGER, EQUAL, PLUS, MINUS, MULT, DIV, SPACE, EOF = 'VAR', 'INTEGER', 'EQUAL', 'PLUS', 'MINUS', 'MULT', 'DIV', 'SPACE', 'EOF'
+var_list = []
 
 
 class Token(object):
@@ -14,6 +15,25 @@ class Token(object):
 
     def __repr__(self):
         return self.__str__()
+
+
+class Variable(Token):
+    def __init__(self, type, value, st_val):
+        self.__stored_val = st_val
+        self.type = type
+        self.value = value
+
+    def __str__(self):
+        return 'Token({type},{value})'.format(
+            type=self.type,
+            value=repr(self.value)
+        )
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __set__stored__val(self, st_val):
+        self.__stored_val = st_val
 
 
 class Interpreter(object):
@@ -34,6 +54,16 @@ class Interpreter(object):
 
         if current_char.isdigit():
             token = Token(INTEGER, int(current_char))
+            self.pos += 1
+            return token
+
+        if current_char.isalpha():
+            token = Token(VAR, current_char)
+            self.pos += 1
+            return token
+
+        if current_char == '=':
+            token = Token(EQUAL, current_char)
             self.pos += 1
             return token
 
@@ -70,59 +100,148 @@ class Interpreter(object):
         else:
             self.error()
 
-    def expr(self):
+    def expr(self, c):
         self.current_token = self.get_next_token()
 
+        first = self.current_token
 
-        left = self.current_token
-        self.eat(INTEGER)
-
-        while self.current_token.type == INTEGER:
-            left.type = self.current_token.type
-            left.value = left.value * 10 + self.current_token.value
+        if isinstance(first.value, int):
+            left = first
             self.eat(INTEGER)
 
-        op = self.current_token
+            while self.current_token.type == INTEGER:
+                left.type = self.current_token.type
+                left.value = left.value * 10 + self.current_token.value
+                self.eat(INTEGER)
 
-        while op.value == ' ':
-            self.eat(SPACE)
             op = self.current_token
 
-        if op.value == '+':
-            self.eat(PLUS)
-        elif op.value == '-':
-            self.eat(MINUS)
-        elif op.value == '*':
-            self.eat(MULT)
-        elif op.value == '/':
-            self.eat(DIV)
+            while op.value == ' ':
+                self.eat(SPACE)
+                op = self.current_token
 
-        right = self.current_token
+            if op.value == '+':
+                self.eat(PLUS)
+            elif op.value == '-':
+                self.eat(MINUS)
+            elif op.value == '*':
+                self.eat(MULT)
+            elif op.value == '/':
+                self.eat(DIV)
 
-        while right.value == ' ':
-            self.eat(SPACE)
             right = self.current_token
 
-        self.eat(INTEGER)
+            while right.value == ' ':
+                self.eat(SPACE)
+                right = self.current_token
 
-        while self.current_token.type == INTEGER:
-            right.type = self.current_token.type
-            right.value = right.value * 10 + self.current_token.value
             self.eat(INTEGER)
 
-        if op.value == '+':
-            result = left.value + right.value
-        elif op.value == '-':
-            result = left.value - right.value
-        elif op.value == '*':
-            result = left.value * right.value
-        elif op.value == '/':
-            result = left.value / right.value
+            while self.current_token.type == INTEGER:
+                right.type = self.current_token.type
+                right.value = right.value * 10 + self.current_token.value
+                self.eat(INTEGER)
 
-        return result
+            if op.value == '+':
+                result = left.value + right.value
+            elif op.value == '-':
+                result = left.value - right.value
+            elif op.value == '*':
+                result = left.value * right.value
+            elif op.value == '/':
+                result = left.value / right.value
+
+            return result
+        elif first.value.isalpha():
+            first = Variable(VAR, first.value, 0)
+            self.eat(VAR)
+            next = self.current_token
+            while next.value == ' ':
+                self.eat(SPACE)
+                next = self.current_token
+
+            self.eat(EQUAL)
+
+            left = self.current_token
+
+            while left.value == ' ':
+                self.eat(SPACE)
+                left = self.current_token
+            if isinstance(left.value, int):
+                self.eat(INTEGER)
+            else:
+                for i in range(0, 100):
+                    col_1 = var_list[i][0]
+                    col_2 = var_list[i][1]
+                    if left.value == col_1:
+                        left = Token(INTEGER, int(col_2))
+                        self.eat(VAR)
+                        break
+
+            while self.current_token.type == INTEGER:
+                left.type = self.current_token.type
+                left.value = left.value * 10 + self.current_token.value
+                self.eat(INTEGER)
+
+            op = self.current_token
+
+            while op.value == ' ':
+                self.eat(SPACE)
+                op = self.current_token
+
+            if op.value == '+':
+                self.eat(PLUS)
+            elif op.value == '-':
+                self.eat(MINUS)
+            elif op.value == '*':
+                self.eat(MULT)
+            elif op.value == '/':
+                self.eat(DIV)
+            else:
+                result = left.value
+                var_list.insert(c, [first.value, result])
+
+                return result
+
+            right = self.current_token
+
+            while right.value == ' ':
+                self.eat(SPACE)
+                right = self.current_token
+
+            if isinstance(right.value, int):
+                self.eat(INTEGER)
+            else:
+                for i in range(0, 100):
+                    col_1 = var_list[i][0]
+                    col_2 = var_list[i][1]
+                    if right.value == col_1:
+                        right = Token(INTEGER, int(col_2))
+                        self.eat(VAR)
+                        break
+
+            while self.current_token.type == INTEGER:
+                right.type = self.current_token.type
+                right.value = right.value * 10 + self.current_token.value
+                self.eat(INTEGER)
+
+            if op.value == '+':
+                result = left.value + right.value
+            elif op.value == '-':
+                result = left.value - right.value
+            elif op.value == '*':
+                result = left.value * right.value
+            elif op.value == '/':
+                result = left.value / right.value
+
+            var_list.insert(c, [first.value, result])
+
+            return result
+
 
 
 def main():
+    c = 0
     while True:
         try:
 
@@ -132,7 +251,9 @@ def main():
         if not text:
             continue
         interpreter = Interpreter(text)
-        result = interpreter.expr()
+
+        result = interpreter.expr(c)
+        c += 1
         print(result)
 
 
