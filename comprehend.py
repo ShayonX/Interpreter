@@ -102,6 +102,8 @@ class Interpreter(object):
 
     def expr(self, c):
         self.current_token = self.get_next_token()
+        flag = 1
+
 
         first = self.current_token
 
@@ -116,40 +118,52 @@ class Interpreter(object):
 
             op = self.current_token
 
-            while op.value == ' ':
-                self.eat(SPACE)
-                op = self.current_token
+            while True:
+                while op.value == ' ':
+                    self.eat(SPACE)
+                    op = self.current_token
 
-            if op.value == '+':
-                self.eat(PLUS)
-            elif op.value == '-':
-                self.eat(MINUS)
-            elif op.value == '*':
-                self.eat(MULT)
-            elif op.value == '/':
-                self.eat(DIV)
+                if op.value == '+':
+                    self.eat(PLUS)
+                elif op.value == '-':
+                    self.eat(MINUS)
+                elif op.value == '*':
+                    self.eat(MULT)
+                elif op.value == '/':
+                    self.eat(DIV)
 
-            right = self.current_token
-
-            while right.value == ' ':
-                self.eat(SPACE)
                 right = self.current_token
 
-            self.eat(INTEGER)
+                while right.value == ' ':
+                    self.eat(SPACE)
+                    right = self.current_token
 
-            while self.current_token.type == INTEGER:
-                right.type = self.current_token.type
-                right.value = right.value * 10 + self.current_token.value
                 self.eat(INTEGER)
 
-            if op.value == '+':
-                result = left.value + right.value
-            elif op.value == '-':
-                result = left.value - right.value
-            elif op.value == '*':
-                result = left.value * right.value
-            elif op.value == '/':
-                result = left.value / right.value
+                while self.current_token.type == INTEGER:
+                    right.type = self.current_token.type
+                    right.value = right.value * 10 + self.current_token.value
+                    self.eat(INTEGER)
+
+                if op.value == '+':
+                    result = left.value + right.value
+                elif op.value == '-':
+                    result = left.value - right.value
+                elif op.value == '*':
+                    result = left.value * right.value
+                elif op.value == '/':
+                    result = left.value / right.value
+
+                left.value = result
+
+                op = self.current_token
+                if op.type == EOF:
+                    break
+                else:
+                    left.value = result
+
+            if flag == 1:
+                print(result)
 
             return result
         elif first.value.isalpha():
@@ -185,56 +199,69 @@ class Interpreter(object):
 
             op = self.current_token
 
-            while op.value == ' ':
-                self.eat(SPACE)
-                op = self.current_token
+            while True:
 
-            if op.value == '+':
-                self.eat(PLUS)
-            elif op.value == '-':
-                self.eat(MINUS)
-            elif op.value == '*':
-                self.eat(MULT)
-            elif op.value == '/':
-                self.eat(DIV)
-            else:
-                result = left.value
-                var_list.insert(c, [first.value, result])
+                while op.value == ' ':
+                    self.eat(SPACE)
+                    op = self.current_token
 
-                return result
+                if op.value == '+':
+                    self.eat(PLUS)
+                elif op.value == '-':
+                    self.eat(MINUS)
+                elif op.value == '*':
+                    self.eat(MULT)
+                elif op.value == '/':
+                    self.eat(DIV)
+                else:
+                    result = left.value
+                    var_list.insert(c, [first.value, result])
 
-            right = self.current_token
+                    return result
 
-            while right.value == ' ':
-                self.eat(SPACE)
                 right = self.current_token
 
-            if isinstance(right.value, int):
-                self.eat(INTEGER)
-            else:
-                for i in range(0, 100):
-                    col_1 = var_list[i][0]
-                    col_2 = var_list[i][1]
-                    if right.value == col_1:
-                        right = Token(INTEGER, int(col_2))
-                        self.eat(VAR)
-                        break
+                while right.value == ' ':
+                    self.eat(SPACE)
+                    right = self.current_token
 
-            while self.current_token.type == INTEGER:
-                right.type = self.current_token.type
-                right.value = right.value * 10 + self.current_token.value
-                self.eat(INTEGER)
+                if isinstance(right.value, int):
+                    self.eat(INTEGER)
+                else:
+                    for i in range(0, 100):
+                        col_1 = var_list[i][0]
+                        col_2 = var_list[i][1]
+                        if right.value == col_1:
+                            right = Token(INTEGER, int(col_2))
+                            self.eat(VAR)
+                            break
 
-            if op.value == '+':
-                result = left.value + right.value
-            elif op.value == '-':
-                result = left.value - right.value
-            elif op.value == '*':
-                result = left.value * right.value
-            elif op.value == '/':
-                result = left.value / right.value
+                while self.current_token.type == INTEGER:
+                    right.type = self.current_token.type
+                    right.value = right.value * 10 + self.current_token.value
+                    self.eat(INTEGER)
+
+                if op.value == '+':
+                    result = left.value + right.value
+                elif op.value == '-':
+                    result = left.value - right.value
+                elif op.value == '*':
+                    result = left.value * right.value
+                elif op.value == '/':
+                    result = left.value / right.value
+
+                left.value = result
+
+                op = self.current_token
+                if op.type == EOF:
+                    break
+                else:
+                    left.value = result
 
             var_list.insert(c, [first.value, result])
+
+            if flag == 1:
+                print(result)
 
             return result
 
@@ -254,7 +281,6 @@ def main():
 
         result = interpreter.expr(c)
         c += 1
-        print(result)
 
 
 if __name__ == '__main__':
