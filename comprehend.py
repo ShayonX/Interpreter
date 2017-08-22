@@ -263,7 +263,7 @@ class Interpreter(object):
                     left.value = left.value * 10 + self.current_token.value
                     self.eat(INTEGER)
                 op = self.current_token
-                # checking if there is only one variable after print and no operator
+                # checking if there is just one variable after print and no operator
                 if op.type == EOF:
                     print(left.value)
                     return left.value
