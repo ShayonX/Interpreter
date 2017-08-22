@@ -81,7 +81,7 @@ class Interpreter(object):
             token = Token(INTEGER, int(current_char))
             self.pos += 1
             return token
-
+        # using a dictionary to simplify detection of print token
         print_dictionary = {0: 'p',
                             1: 'r',
                             2: 'i',
@@ -94,6 +94,7 @@ class Interpreter(object):
             while True:
                 self.pos += 1
                 current_char = text[self.pos]
+                # using keys to access the values
                 if current_char == print_dictionary[i]:
                     i += 1
                     if current_char == 't':
@@ -154,6 +155,7 @@ class Interpreter(object):
         # otherwise there is an error
         if self.current_token.type == token_type:
             self.current_token = self.get_next_token()
+        # as print token is identified differently we use a separate condition
         elif self.token_type == PRINT:
             self.current_token = self.get_next_token()
         else:
@@ -163,176 +165,115 @@ class Interpreter(object):
         self.current_token = self.get_next_token()
         # first token is set as the current token
         first = self.current_token
-
+        # checking if the token is print
         if first.value == 'print':
-
+            # if it is print we are utilising the token
             self.eat(PRINT)
+            # we move on to the next token
             first = self.current_token
+            # checking for the space that lies in between
             while first.value == ' ':
                 self.eat(SPACE)
                 first = self.current_token
 
             # checking if the first value is just an integer
             # then we proceed to solve the expression
-            if isinstance(first.value, int):
 
-                left = first
+            left = first
+
+            while left.value == ' ':
+                self.eat(SPACE)
+                left = self.current_token
+            # first we check for the integers
+            if isinstance(left.value, int):
                 self.eat(INTEGER)
-                # this loop enables the integers to have multiple digits
-                while self.current_token.type == INTEGER:
-                    left.type = self.current_token.type
-                    left.value = left.value * 10 + self.current_token.value
-                    self.eat(INTEGER)
-
-                op = self.current_token
-                # checking if there is only one integer after print and no operator
-                if op.type == EOF:
-                    print(left.value)
-                    return left.value
-                # this loop enables the expression to contain n number of numbers in the expression
-                while True:
-                    # checking for spaces in between operands and operators
-                    while op.value == ' ':
-                        self.eat(SPACE)
-                        op = self.current_token
-                    # understanding the type of calculation that will happen between left and right based on the token
-                    if op.value == '+':
-                        self.eat(PLUS)
-                    elif op.value == '-':
-                        self.eat(MINUS)
-                    elif op.value == '*':
-                        self.eat(MULT)
-                    elif op.value == '/':
-                        self.eat(DIV)
-                    # now we work with the operand on the right side of the operator
-                    right = self.current_token
-                    # checking for space otherwise the integer is utilised
-                    while right.value == ' ':
-                        self.eat(SPACE)
-                        right = self.current_token
-
-                    self.eat(INTEGER)
-                    # enables the use of multiple digit integers on the right side of the operator
-                    while self.current_token.type == INTEGER:
-                        right.type = self.current_token.type
-                        right.value = right.value * 10 + self.current_token.value
-                        self.eat(INTEGER)
-                    # performong the calculation
-                    if op.value == '+':
-                        result = left.value + right.value
-                    elif op.value == '-':
-                        result = left.value - right.value
-                    elif op.value == '*':
-                        result = left.value * right.value
-                    elif op.value == '/':
-                        result = left.value / right.value
-                    # final value is stored in left to enable multi operator calculations
-                    left.value = result
-
-                    op = self.current_token
-                    # if the next token indicates EOF we terminate
-                    if op.type == EOF:
+            else:
+                # using the data structure we find the value of the variable
+                # this is only possible if the user did input a value previously otherwise therer will be an exception will be invoked
+                for i in range(0, 100):
+                    col_1 = var_list[i][0]
+                    col_2 = var_list[i][1]
+                    if left.value == col_1:
+                        left = Token(INTEGER, int(col_2))
+                        self.eat(VAR)
                         break
-                    else:
-                        left.value = result
 
+            # this will help us tackle multiple digit integers
+            while self.current_token.type == INTEGER:
+                left.type = self.current_token.type
+                left.value = left.value * 10 + self.current_token.value
+                self.eat(INTEGER)
+            op = self.current_token
+            # checking if there is just one variable after print and no operator
+            if op.type == EOF:
                 print(left.value)
-
                 return left.value
 
-            else:
-
-                left = first
-
-                while left.value == ' ':
+            # this loop enables us to evaluate expressions with multiple operands
+            while True:
+                # we check for interlying spaces
+                while op.value == ' ':
                     self.eat(SPACE)
-                    left = self.current_token
-                if isinstance(left.value, int):
+                    op = self.current_token
+                # decide the operatr according to the input
+                if op.value == '+':
+                    self.eat(PLUS)
+                elif op.value == '-':
+                    self.eat(MINUS)
+                elif op.value == '*':
+                    self.eat(MULT)
+                elif op.value == '/':
+                    self.eat(DIV)
+                else:
+                    result = left.value
+
+                    return result
+                # for the right hand operand we follow similar steps
+                right = self.current_token
+
+                while right.value == ' ':
+                    self.eat(SPACE)
+                    right = self.current_token
+
+                if isinstance(right.value, int):
                     self.eat(INTEGER)
                 else:
                     for i in range(0, 100):
                         col_1 = var_list[i][0]
                         col_2 = var_list[i][1]
-                        if left.value == col_1:
-                            left = Token(INTEGER, int(col_2))
+                        if right.value == col_1:
+                            right = Token(INTEGER, int(col_2))
                             self.eat(VAR)
                             break
 
                 while self.current_token.type == INTEGER:
-                    left.type = self.current_token.type
-                    left.value = left.value * 10 + self.current_token.value
+                    right.type = self.current_token.type
+                    right.value = right.value * 10 + self.current_token.value
                     self.eat(INTEGER)
+                # now based on the stored operator arithmetic operation is performed
+                if op.value == '+':
+                    result = left.value + right.value
+                elif op.value == '-':
+                    result = left.value - right.value
+                elif op.value == '*':
+                    result = left.value * right.value
+                elif op.value == '/':
+                    result = left.value / right.value
+
+                left.value = result
+                # we check if the expression is any larger
                 op = self.current_token
-                # checking if there is just one variable after print and no operator
                 if op.type == EOF:
-                    print(left.value)
-                    return left.value
-
-                while True:
-
-                    while op.value == ' ':
-                        self.eat(SPACE)
-                        op = self.current_token
-
-                    if op.value == '+':
-                        self.eat(PLUS)
-                    elif op.value == '-':
-                        self.eat(MINUS)
-                    elif op.value == '*':
-                        self.eat(MULT)
-                    elif op.value == '/':
-                        self.eat(DIV)
-                    else:
-                        result = left.value
-                        var_list.insert(c, [first.value, result])
-
-                        return result
-
-                    right = self.current_token
-
-                    while right.value == ' ':
-                        self.eat(SPACE)
-                        right = self.current_token
-
-                    if isinstance(right.value, int):
-                        self.eat(INTEGER)
-                    else:
-                        for i in range(0, 100):
-                            col_1 = var_list[i][0]
-                            col_2 = var_list[i][1]
-                            if right.value == col_1:
-                                right = Token(INTEGER, int(col_2))
-                                self.eat(VAR)
-                                break
-
-                    while self.current_token.type == INTEGER:
-                        right.type = self.current_token.type
-                        right.value = right.value * 10 + self.current_token.value
-                        self.eat(INTEGER)
-
-                    if op.value == '+':
-                        result = left.value + right.value
-                    elif op.value == '-':
-                        result = left.value - right.value
-                    elif op.value == '*':
-                        result = left.value * right.value
-                    elif op.value == '/':
-                        result = left.value / right.value
-
+                    break
+                else:
                     left.value = result
 
-                    op = self.current_token
-                    if op.type == EOF:
-                        break
-                    else:
-                        left.value = result
+            # now we create a variable object with its identifier and value
+            var_list.insert(c, [first.value, result])
 
-                # now we create a variable object with its identifier and value
-                var_list.insert(c, [first.value, result])
+            print(result)
 
-                print(result)
-
-                return result
+            return result
 
         # now checking for a variable as the starting token
         else:
@@ -347,7 +288,7 @@ class Interpreter(object):
                 next = self.current_token
 
             self.eat(EQUAL)
-            # Now like in the previous case of just integers we calculate the assignment value
+            # Now we calculate the assignment value following the steps used above to evaluate an expression
             left = self.current_token
 
             while left.value == ' ':
@@ -430,7 +371,7 @@ class Interpreter(object):
                 else:
                     left.value = result
 
-            # now we create a variable object with its identifier and value
+            # now we create a variable object with its identifier and value and send it to a data structure
             var_list.insert(c, [first.value, result])
 
             return result
@@ -438,10 +379,11 @@ class Interpreter(object):
 
 def main():
     # main function that regulates the entire interpreter
+    # the c will be used as a counter for variables
     c = 0
     while True:
         try:
-
+            # we decide our prompt here
             text = input('lang> ')
         except EOFError:
             break
